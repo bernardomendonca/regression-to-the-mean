@@ -5,13 +5,16 @@ function onScoreUpdate(dropPosition, bounciness, size, bucketLabel) {
 }
 
 function runAnalysis() {
-  const testSetSize = 10;
+  const testSetSize = 100;
   // running the splitDataset function and spliting them into two:
   const [testSet, trainingSet] = splitDataset(outputs, testSetSize);
 
   _.range(1, 20).forEach((k) => {
     const accuracy = _.chain(testSet)
-      .filter((testPoint) => knn(trainingSet, testPoint[0], k) === testPoint[3])
+      .filter(
+        (testPoint) =>
+          knn(trainingSet, _.initial(testPoint), k) === testPoint[3]
+      )
       .size()
       .divide(testSetSize)
       .value();
@@ -21,8 +24,15 @@ function runAnalysis() {
 }
 
 function knn(data, point, k) {
+  // points has to be passed without the label (last element)
   return _.chain(data)
-    .map((row) => [distance(row[0], point), row[3]])
+    .map((row) => {
+      return [
+        distance(_.initial(row), point),
+        //label
+        _.last(row),
+      ];
+    })
     .sortBy((row) => row[0])
     .slice(0, k)
     .countBy((row) => row[1])
@@ -37,7 +47,7 @@ function knn(data, point, k) {
 function distance(pointA, pointB) {
   // distance between arrays, such as
   // pointA = [] and pointB =[]
-  // using the pitagorean theorem
+  // using the pythagorean theorem
   return (
     _.chain(pointA)
       .zip(pointB)
@@ -56,4 +66,26 @@ function splitDataset(data, testCount) {
   const trainingSet = _.slice(shuffled, testCount);
 
   return [testSet, trainingSet];
+}
+
+function minMax(data, featureCount) {
+  // we'll clone the outputs array, so we can modify it freely
+  // there's a lodash method for that:
+  const clonedData = _.cloneDeep(data);
+  // we'll iterate over each feature that we want to normalise:
+  for (let i = 0; i < featureCount; i++) {
+    // extracting each column
+    const column = conedData.map((row) => row[i]);
+    // getting min and max from each column of that array
+    const min = _.min(column);
+    const max = _.max(column);
+    // iterating over each row of the column:
+    for (let j = 0; j < clonedData.length; j++) {
+      // update the value of each drop position
+      // cloneData at ROW j and COLUMN i
+      clonedData[j][i] = (clonedData[j][i] - min) / (max - min);
+    }
+  }
+
+  return clonedData;
 }
