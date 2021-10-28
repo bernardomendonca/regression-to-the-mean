@@ -6,20 +6,23 @@ function onScoreUpdate(dropPosition, bounciness, size, bucketLabel) {
 
 function runAnalysis() {
   const testSetSize = 100;
-  // running the splitDataset function and spliting them into two:
-  const [testSet, trainingSet] = splitDataset(outputs, testSetSize);
+  const k = 10;
 
-  _.range(1, 20).forEach((k) => {
+  _.range(0, 3).forEach((feature) => {
+    const data = _.map(outputs, (row) => [row[feature], _.last(row)]);
+    // running the splitDataset function and spliting them into two
+    // just before splitting, we want to normalise our dataset by running the minMax function for 3 features
+    const [testSet, trainingSet] = splitDataset(minMax(data, 1), testSetSize);
     const accuracy = _.chain(testSet)
       .filter(
         (testPoint) =>
-          knn(trainingSet, _.initial(testPoint), k) === testPoint[3]
+          knn(trainingSet, _.initial(testPoint), k) === _.last(testPoint)
       )
       .size()
       .divide(testSetSize)
       .value();
 
-    console.log("the value of K is: ", k, " and the accuracy is:", accuracy);
+    console.log("For feature of ", feature, " the accuracy is:", accuracy);
   });
 }
 
@@ -75,7 +78,7 @@ function minMax(data, featureCount) {
   // we'll iterate over each feature that we want to normalise:
   for (let i = 0; i < featureCount; i++) {
     // extracting each column
-    const column = conedData.map((row) => row[i]);
+    const column = clonedData.map((row) => row[i]);
     // getting min and max from each column of that array
     const min = _.min(column);
     const max = _.max(column);
